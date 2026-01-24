@@ -46,3 +46,5 @@ ENV/
 # Pytest
 .pytest_cache/
 htmlcov/
+
+/chroma_store

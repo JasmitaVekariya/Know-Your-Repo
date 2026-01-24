@@ -206,6 +206,8 @@ def chunk_file_content(
         chunk['language'] = language
         chunk['module_type'] = module_type
         chunk['is_entry_candidate'] = is_entry
+        if 'entity_name' not in chunk:
+            chunk['entity_name'] = ""
     
     return chunks
 
@@ -227,41 +229,43 @@ def chunk_code_file(content: str, file_path: str, language: str, chunk_overlap: 
     chunks = []
     
     # Language-specific patterns for splitting
+    # Language-specific patterns for splitting
+    # Updated to capture the entity name in the last group
     patterns = {
         'python': [
-            (r'^def\s+\w+', 'function'),
-            (r'^class\s+\w+', 'class'),
-            (r'^@\w+', 'decorator'),
+            (r'^def\s+(\w+)', 'function'),
+            (r'^class\s+(\w+)', 'class'),
+            (r'^@(\w+)', 'decorator'),
         ],
         'javascript': [
-            (r'^(export\s+)?(async\s+)?function\s+\w+', 'function'),
-            (r'^(export\s+)?class\s+\w+', 'class'),
-            (r'^(export\s+)?const\s+\w+\s*=\s*(async\s+)?\(', 'arrow'),
-            (r'^(export\s+)?const\s+\w+\s*=\s*\{', 'object'),
+            (r'^(?:export\s+)?(?:async\s+)?function\s+(\w+)', 'function'),
+            (r'^(?:export\s+)?class\s+(\w+)', 'class'),
+            (r'^(?:export\s+)?const\s+(\w+)\s*=\s*(?:async\s+)?\(', 'arrow'),
+            (r'^(?:export\s+)?const\s+(\w+)\s*=\s*\{', 'object'),
         ],
         'typescript': [
-            (r'^(export\s+)?(async\s+)?function\s+\w+', 'function'),
-            (r'^(export\s+)?(abstract\s+)?class\s+\w+', 'class'),
-            (r'^(export\s+)?interface\s+\w+', 'interface'),
-            (r'^(export\s+)?type\s+\w+', 'type'),
-            (r'^(export\s+)?const\s+\w+\s*[:=]', 'const'),
+            (r'^(?:export\s+)?(?:async\s+)?function\s+(\w+)', 'function'),
+            (r'^(?:export\s+)?(?:abstract\s+)?class\s+(\w+)', 'class'),
+            (r'^(?:export\s+)?interface\s+(\w+)', 'interface'),
+            (r'^(?:export\s+)?type\s+(\w+)', 'type'),
+            (r'^(?:export\s+)?const\s+(\w+)\s*[:=]', 'const'),
         ],
         'java': [
-            (r'^(public|private|protected)?\s*(static\s+)?(class|interface|enum)\s+\w+', 'class'),
-            (r'^(public|private|protected)?\s*(static\s+)?\w+\s+\w+\s*\(', 'method'),
+            (r'^(?:public|private|protected)?\s*(?:static\s+)?(?:class|interface|enum)\s+(\w+)', 'class'),
+            (r'^(?:public|private|protected)?\s*(?:static\s+)?\w+\s+(\w+)\s*\(', 'method'),
         ],
         'cpp': [
-            (r'^(class|struct|namespace)\s+\w+', 'class'),
-            (r'^\w+\s+\w+::\w+', 'method'),
+            (r'^(?:class|struct|namespace)\s+(\w+)', 'class'),
+            (r'^\w+\s+(\w+)::\w+', 'method'),
         ],
         'go': [
-            (r'^func\s+\w+', 'function'),
-            (r'^type\s+\w+', 'type'),
-            (r'^package\s+\w+', 'package'),
+            (r'^func\s+(\w+)', 'function'),
+            (r'^type\s+(\w+)', 'type'),
+            (r'^package\s+(\w+)', 'package'),
         ],
         'rust': [
-            (r'^(pub\s+)?(async\s+)?fn\s+\w+', 'function'),
-            (r'^(pub\s+)?(struct|enum|impl|trait)\s+\w+', 'type'),
+            (r'^(?:pub\s+)?(?:async\s+)?fn\s+(\w+)', 'function'),
+            (r'^(?:pub\s+)?(?:struct|enum|impl|trait)\s+(\w+)', 'type'),
         ],
     }
     
@@ -272,39 +276,88 @@ def chunk_code_file(content: str, file_path: str, language: str, chunk_overlap: 
         lines = content.split('\n')
         current_chunk = []
         current_tokens = 0
+        current_entity = None
         
         for line in lines:
             line_tokens = count_tokens(line)
             
-            # Check if this line starts a new logical block
-            starts_block = any(re.match(pattern, line) for pattern, _ in pattern_list)
+            # Check if this line starts a new logical block and extract name
+            match = None
+            entity_type = None
+            
+            for pattern, type_name in pattern_list:
+                m = re.match(pattern, line)
+                if m:
+                    match = m
+                    entity_type = type_name
+                    break
+            
+            starts_block = match is not None
             
             # If adding this line would exceed max size, finalize current chunk
             if current_tokens + line_tokens > MAX_CHUNK_SIZE_TOKENS and current_chunk:
                 chunk_text = '\n'.join(current_chunk)
+                # Enrich content with entity name if available
+                if current_entity:
+                    chunk_text = f"### Entity: {current_entity}\n" + chunk_text
+                    
                 chunks.append({
                     'content': chunk_text,
                     'start_line': len(chunks) * 100,  # Approximate
                     'end_line': len(chunks) * 100 + len(current_chunk),
+                    'entity_name': current_entity or "",
                 })
                 
                 # Start new chunk with overlap
                 overlap_lines = _get_overlap_lines(current_chunk, chunk_overlap)
                 current_chunk = overlap_lines + [line]
                 current_tokens = sum(count_tokens(l) for l in current_chunk)
+                
+                # Update entity if this line started a new block
+                if starts_block:
+                     # Try to capture group 1 (name), else use whole match
+                    if match.groups():
+                        # Find the first non-None group that isn't export/pub/async prefix keywords usually found in group 1/2
+                        # This depends on regex. Let's rely on the last group usually being the name or close to it.
+                        # Actually, let's just use the full match line as a proxy or refine patterns.
+                        # Better approach: Extract name from specific patterns.
+                        # For now, let's define that the NAME is the last captured group if multiple, or the first if one.
+                        groups = [g for g in match.groups() if g]
+                        current_entity = groups[-1] if groups else "unknown"
+                    else:
+                        current_entity = "block"
+                        
             elif starts_block and current_tokens > MIN_CHUNK_SIZE_TOKENS and current_chunk:
                 # Start new chunk at logical boundary
                 chunk_text = '\n'.join(current_chunk)
+                if current_entity:
+                    chunk_text = f"### Entity: {current_entity}\n" + chunk_text
+                    
                 chunks.append({
                     'content': chunk_text,
                     'start_line': len(chunks) * 100,
                     'end_line': len(chunks) * 100 + len(current_chunk),
+                    'entity_name': current_entity or "",
                 })
                 current_chunk = [line]
                 current_tokens = line_tokens
+                
+                # Update entity
+                if match.groups():
+                    groups = [g for g in match.groups() if g]
+                    current_entity = groups[-1] if groups else "unknown"
+                else:
+                    current_entity = "block"
+
             else:
                 current_chunk.append(line)
                 current_tokens += line_tokens
+                
+                # Capture entity if it's the first line of the file/chunk and we haven't set it
+                if starts_block and current_entity is None:
+                     if match.groups():
+                        groups = [g for g in match.groups() if g]
+                        current_entity = groups[-1] if groups else "unknown"
         
         # Add final chunk
         if current_chunk:
