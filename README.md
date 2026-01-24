@@ -1,107 +1,198 @@
-```md
-# GitHub Repo Intelligence Agent  
-## Hackathon Phase-Wise Implementation Plan
+# GitHub Repo Intelligence Agent
 
----
+An AI-powered developer tool that ingests public GitHub repositories, analyzes their architecture, and helps plan new features with detailed implementation guidance.
 
-## 0. Project Goal (Lock This First)
+## 🚀 Features
 
-Build an AI agent that:
-1. Ingests a **public GitHub repository**
-2. Explains the repo **architecture + flow step-by-step**
-3. Helps users **plan new features** by generating:
-   - Architecture changes
-   - Files to modify
-   - A strict, reusable AI prompt
-4. Uses **ephemeral vector storage** (per session)
-5. Tracks **token usage + pricing per user**
+- **Repository Analysis**: Ingest and analyze public GitHub repositories
+- **Architecture Explanation**: Step-by-step breakdown of repo structure and flow
+- **Feature Planning**: Generate detailed plans for new features including:
+  - Architecture changes
+  - Files to modify
+  - Implementation steps
+  - Mermaid diagrams
+- **Ephemeral Storage**: Session-based vector storage for security
+- **Token Usage Tracking**: Monitor API costs per user
+- **Clean UI**: React-based interface with Mermaid diagram support
 
-This is a **developer tool**, not a chatbot.
-
----
-
-## 1. Tech Stack (Finalized)
+## 🛠 Tech Stack
 
 ### Backend
-- Python
-- FastAPI
-- LangChain
-- Google Gemini (direct SDK)
-- ChromaDB (local, ephemeral)
-- MongoDB (users + usage)
+- **Python** - Core language
+- **FastAPI** - API framework
+- **LangChain** - LLM orchestration
+- **Google Gemini** - AI model
+- **ChromaDB** - Vector storage
+- **MongoDB** - User data and usage tracking
 
 ### Frontend
-- React
-- Tailwind CSS
-- Mermaid (diagram code only)
+- **React** - UI framework
+- **Vite** - Build tool
+- **Tailwind CSS** - Styling
+- **Mermaid** - Diagram generation
+
+## 📋 Prerequisites
+
+- Python 3.9+ (3.11 recommended)
+- Node.js 16+
+- Git
+- Google Cloud account (for Gemini API)
+- MongoDB instance
+
+## 🚀 Installation
+
+### Backend Setup
+
+1. Navigate to backend directory:
+   ```bash
+   cd backend
+   ```
+
+2. Create virtual environment:
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. Create `.env` file:
+   ```bash
+   GEMINI_API_KEY=your_gemini_api_key
+   MONGO_URI=your_mongodb_connection_string
+   ```
+
+5. Run the server:
+   ```bash
+   uvicorn app.main:app --reload
+   ```
+
+### Frontend Setup
+
+1. Navigate to frontend directory:
+   ```bash
+   cd frontend
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Start development server:
+   ```bash
+   npm run dev
+   ```
+
+## 📖 Usage
+
+1. **Access the application** at `http://localhost:5173` (frontend) and `http://localhost:8000` (backend API)
+
+2. **Login or continue as guest**
+
+3. **Enter a GitHub repository URL** (must be public)
+
+4. **Choose mode**:
+   - **Explain Repository**: Get architecture breakdown and flow explanation
+   - **Plan Feature**: Describe a new feature and get implementation guidance
+
+5. **View results** including Mermaid diagrams and detailed plans
+
+## 🔧 API Endpoints
+
+- `GET /health` - Health check
+- `POST /api/ingest` - Ingest repository
+- `POST /api/chat` - Chat with AI agent
+- `GET /api/user/usage` - Get token usage
+
+## 🏗 Project Structure
+
+```
+KYR/
+├── backend/
+│   ├── app/
+│   │   ├── main.py
+│   │   ├── api/
+│   │   ├── core/
+│   │   ├── ingestion/
+│   │   ├── llm/
+│   │   ├── vector/
+│   │   ├── db/
+│   │   └── utils/
+│   ├── requirements.txt
+│   └── SETUP.md
+├── frontend/
+│   ├── src/
+│   │   ├── pages/
+│   │   ├── components/
+│   │   ├── api/
+│   │   └── assets/
+│   ├── package.json
+│   └── vite.config.js
+└── README.md
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ---
 
-## 2. High-Level Architecture
+## 🎯 Hackathon Implementation Plan
 
-Frontend (React)
-→ FastAPI API Gateway
-→ Repo Ingestion Pipeline
-→ Repo Manifest Generator
-→ ChromaDB (session-scoped)
-→ LangChain + Gemini
-→ Response Formatter (explanation / feature plan)
+*Detailed phase-by-phase development plan for the hackathon*
 
----
+### Phase 1 — Project Skeleton
+- Set up backend and frontend project structures
+- Initialize FastAPI and React applications
 
-## 3. Phase 1 — Project Skeleton (DO THIS FIRST)
+### Phase 2 — GitHub Repo Ingestion Pipeline
+- Implement repository cloning with size limits
+- Add file filtering and chunking strategies
+- Create manifest generation
 
-### Backend structure
-```
+### Phase 3 — Vector Storage & LLM Integration
+- Set up ChromaDB with session management
+- Integrate Google Gemini API
+- Implement cleanup tasks
 
-backend/
-├── app/
-│   ├── main.py
-│   ├── api/
-│   │   ├── ingest.py
-│   │   ├── chat.py
-│   │   └── user.py
-│   ├── core/
-│   │   ├── config.py
-│   │   ├── session.py
-│   │   └── cleanup.py
-│   ├── ingestion/
-│   │   ├── github_loader.py
-│   │   ├── filters.py
-│   │   ├── chunker.py
-│   │   └── manifest.py
-│   ├── llm/
-│   │   ├── gemini.py
-│   │   └── prompts.py
-│   ├── vector/
-│   │   └── chroma.py
-│   ├── db/
-│   │   ├── mongo.py
-│   │   └── models.py
-│   └── utils/
-│       └── token_counter.py
+### Phase 4 — Core Agent Capabilities
+- Repository explanation mode
+- Feature planning mode with structured outputs
 
-```
+### Phase 5 — Frontend & Demo
+- Build minimal UI
+- Add Mermaid diagram support
+- Prepare demo scenarios
 
-### Frontend structure
-```
+### Key Technical Decisions
+- **Max repo size**: 500 files, 200KB per file
+- **Session TTL**: 30 minutes
+- **Chunk size**: 400-600 tokens
+- **Models**: Google Gemini Pro
 
-frontend/
-├── src/
-│   ├── pages/
-│   ├── components/
-│   ├── api/
-│   └── utils/
-
-```
+### Demo Readiness Checklist
+- [ ] Small repo analysis (<100 files)
+- [ ] Medium repo analysis (300-500 files)
+- [ ] Feature planning demonstration
+- [ ] Mermaid diagram generation
+- [ ] Token usage tracking
+- [ ] Error handling and recovery
 
 ---
 
-## 4. Phase 2 — GitHub Repo Ingestion Pipeline (CRITICAL)
-
-### 4.1 Repo Fetching
-**AI CAN DO**
-- Clone public repo using `gitpython`
+*Built for hackathons with deterministic engineering first, AI second.*
 - Handle branch = `main` fallback to `master`
 
 **YOU MUST**
