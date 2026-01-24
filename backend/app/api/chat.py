@@ -180,12 +180,6 @@ async def chat(request: ChatRequest, background_tasks: BackgroundTasks, user: To
     gemini = get_gemini_client()
     try:
         answer = gemini.generate_response(final_prompt)
-        
-        # --- MERMAID SANITIZATION ---
-        # Sanitize any Mermaid diagrams in the response
-        from app.utils.mermaid_validator import replace_mermaid_blocks
-        answer = replace_mermaid_blocks(answer)
-        
     except Exception as e:
         logger.error(f"LLM generation failed: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate answer: {str(e)}")
@@ -290,18 +284,10 @@ async def get_chat_metadata(session_id: str):
     chat = await mongo_client.get_chat(session_id)
     if not chat:
         raise HTTPException(status_code=404, detail="Chat not found")
-    
-    # --- MERMAID SANITIZATION ---
-    # Sanitize any Mermaid diagrams in existing phase content
-    from app.utils.mermaid_validator import replace_mermaid_blocks
-    mind_map = chat.get("mind_map", [])
-    for phase in mind_map:
-        if phase.get("content"):
-            phase["content"] = replace_mermaid_blocks(phase["content"])
-    
+        
     return {
         "mode": chat.get("mode", "architect"),
-        "mind_map": mind_map,
+        "mind_map": chat.get("mind_map", []),
         "current_step_index": chat.get("current_step_index", 0),
         "repo_name": chat.get("repo_name", "")
     }
@@ -365,10 +351,9 @@ async def toggle_favorite(session_id: str, user: TokenData = Depends(get_current
     return {"session_id": session_id, "is_favorite": new_status}
 
 @router.post("/{session_id}/phase/generate")
-async def generate_phase(session_id: str, request: Dict[str, int], background_tasks: BackgroundTasks, user: TokenData = Depends(get_current_user)):
+async def generate_phase(session_id: str, request: Dict[str, int], user: TokenData = Depends(get_current_user)):
     """
     Generate detailed content for a specific phase (lazy load).
-    Auto-reingest if collection is missing.
     """
     step_index = request.get("step_index", 0)
     
@@ -390,38 +375,12 @@ async def generate_phase(session_id: str, request: Dict[str, int], background_ta
     # If content already exists and is significant, return it (cache)
     if step.get("content") and len(step["content"]) > 50:
         return {"step_index": step_index, "content": step["content"], "status": "cached"}
-    
-    # --- AUTO-REINGESTION CHECK ---
-    # Check if ChromaDB collection exists
-    from app.vector.chroma import ChromaClient
-    chroma = ChromaClient()
-    
-    if not chroma.is_collection_populated(session_id):
-        logger.warning(f"Collection {session_id} not found. Triggering auto-reingestion...")
-        
-        # Get repo_url from chat record
-        repo_url = chat.get("repo_url")
-        if not repo_url:
-            raise HTTPException(status_code=400, detail="Cannot reingest: repo_url not found in chat record")
-        
-        # Trigger reingestion
-        from app.api.ingest import run_ingestion_pipeline
-        try:
-            await run_ingestion_pipeline(
-                session_id=session_id,
-                repo_url=repo_url,
-                user_id=chat.get("user_id", user.user_id),
-                mode=chat.get("mode", "architect"),
-                background_tasks=background_tasks
-            )
-            logger.info(f"Auto-reingestion completed for {session_id}")
-        except Exception as reingest_error:
-            logger.error(f"Auto-reingestion failed: {reingest_error}")
-            raise HTTPException(status_code=500, detail=f"Failed to reingest repository: {str(reingest_error)}")
         
     # Generate
     try:
         # Use RAG Context
+        from app.vector.chroma import ChromaClient
+        chroma = ChromaClient()
         query = f"{step['title']} {step['description']}"
         context_chunks = chroma.query(session_id, query, top_k=5)
         
@@ -437,11 +396,6 @@ async def generate_phase(session_id: str, request: Dict[str, int], background_ta
         
         content = result.get("content", "Failed to generate")
         usage = result.get("usage", {})
-        
-        # --- MERMAID SANITIZATION ---
-        # Sanitize any Mermaid diagrams in the phase content
-        from app.utils.mermaid_validator import replace_mermaid_blocks
-        content = replace_mermaid_blocks(content)
         
         # Update DB
         mind_map[step_index]["content"] = content

@@ -196,34 +196,3 @@ body {
   font-weight: 700;
   color: inherit;
 }
-
-/* Hide Mermaid Syntax Errors */
-/* Target the error icons and text that Mermaid renders */
-.error-icon,
-.error-text {
-  display: none !important;
-}
-
-/* Hide SVG groups that contain errors (Mermaid renders errors with specific classes) */
-svg g.error,
-svg g[class*="error"] {
-  display: none !important;
-}
-
-/* Hide all black text in SVG (Mermaid errors are typically black) */
-/* This is aggressive but necessary to hide the error messages */
-svg text[fill="#000000"],
-svg text[fill="black"],
-svg text[fill="rgb(0, 0, 0)"],
-svg text[style*="fill: rgb(0, 0, 0)"],
-svg text[style*="fill:#000000"],
-svg text[style*="fill:black"] {
-  display: none !important;
-  visibility: hidden !important;
-}
-
-/* Also hide any path elements that are part of error icons */
-svg path[fill="#000000"],
-svg path[fill="black"] {
-  display: none !important;
-}

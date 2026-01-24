@@ -4,7 +4,6 @@ import { api } from '../api/client';
 import ReactMarkdown from 'react-markdown';
 import { Send, ArrowLeft, Bot, User } from 'lucide-react';
 import CodeBlock from '../components/CodeBlock';
-import MermaidRenderer from '../components/MermaidRenderer';
 import MindMapPanel from './MindMapPanel';
 
 const Chat = () => {
@@ -208,14 +207,8 @@ const Chat = () => {
                                         components={{
                                             code({ node, inline, className, children, ...props }) {
                                                 const match = /language-(\w+)/.exec(className || '');
-                                                const language = match ? match[1] : '';
                                                 const content = String(children).replace(/\n$/, '');
                                                 const isInline = inline || (!match && content.length < 50 && !content.includes('\n'));
-
-                                                // Handle Mermaid diagrams
-                                                if (language === 'mermaid' && !isInline) {
-                                                    return <MermaidRenderer chart={content} />;
-                                                }
 
                                                 if (!isInline) {
                                                     return (
