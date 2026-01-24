@@ -39,6 +39,43 @@ class ChromaClient:
             logger.error(f"Failed to create collection for session {session_id}: {e}")
             raise
 
+    def has_collection(self, session_id: str) -> bool:
+        """
+        Check if a collection exists for a session.
+
+        Args:
+           session_id: Session identifier
+
+        Returns:
+            True if collection exists, False otherwise
+        """
+        try:
+            self.client.get_collection(name=session_id)
+            return True
+        except ValueError:
+            return False
+        except Exception as e:
+            logger.error(f"Error checking collection existence for {session_id}: {e}")
+            return False
+    def is_collection_populated(self, session_id: str) -> bool:
+        """
+        Check if a collection exists and has documents.
+
+        Args:
+           session_id: Session identifier
+
+        Returns:
+            True if collection exists and count > 0, False otherwise
+        """
+        try:
+            collection = self.client.get_collection(name=session_id)
+            return collection.count() > 0
+        except ValueError:
+            return False
+        except Exception as e:
+            logger.error(f"Error checking collection population for {session_id}: {e}")
+            return False
+
     def add_chunks(self, session_id: str, chunks: List[Dict[str, Any]]) -> None:
         """
         Add chunks to the session collection.
@@ -61,7 +98,8 @@ class ChromaClient:
                     "language": str(chunk.get("language", "unknown")),
                     "module_type": str(chunk.get("module_type", "unknown")),
                     "start_line": int(chunk.get("start_line", 0)),
-                    "end_line": int(chunk.get("end_line", 0))
+                    "end_line": int(chunk.get("end_line", 0)),
+                    "entity_name": str(chunk.get("entity_name", ""))
                 }
                 metadatas.append(meta)
                 

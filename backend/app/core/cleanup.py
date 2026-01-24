@@ -43,13 +43,16 @@ async def cleanup_expired_sessions():
         
         for session_id, session_data in sessions.items():
             try:
-                created_at_str = session_data.get("created_at")
-                if created_at_str:
-                    created_at = datetime.fromisoformat(created_at_str)
-                    age = now - created_at
+                # Use last_accessed if available, else created_at
+                last_activity_str = session_data.get("last_accessed") or session_data.get("created_at")
+                
+                if last_activity_str:
+                    last_activity = datetime.fromisoformat(last_activity_str)
+                    age = now - last_activity
                     
+                    # Check against TTL
                     if age > timedelta(minutes=SESSION_TTL_MINUTES):
-                        logger.info(f"Session {session_id} expired (age: {age}). marking for cleanup.")
+                        logger.info(f"Session {session_id} expired (inactive for: {age}). marking for cleanup.")
                         session_ids_to_remove.append(session_id)
             except Exception as e:
                 logger.error(f"Error checking session {session_id} expiry: {e}")

@@ -59,3 +59,46 @@ class GeminiClient:
         except Exception as e:
             logger.error(f"Gemini streaming failed: {e}")
             raise e
+    
+    def generate_mind_map(self, context_text: str, mode: str = "architect") -> dict:
+        """
+        Generate a JSON mind map curriculum (Outline Only) based on the selected mode.
+        Returns: { "content": str, "usage": dict }
+        """
+        from app.llm.prompts import OUTLINE_PROMPTS
+        
+        # Get prompt for mode, fallback to architect if unknown
+        prompt_template = OUTLINE_PROMPTS.get(mode, OUTLINE_PROMPTS["architect"])
+        
+        prompt = prompt_template.format(context=context_text)
+        try:
+             response = self.model.generate_content(prompt)
+             usage = {
+                 "prompt_tokens": response.usage_metadata.prompt_token_count,
+                 "completion_tokens": response.usage_metadata.candidates_token_count,
+                 "total_tokens": response.usage_metadata.total_token_count
+             }
+             return {"content": response.text, "usage": usage}
+        except Exception as e:
+            logger.error(f"Mind Map generation failed: {e}")
+            return {"content": "[]", "usage": {}}
+
+    def generate_phase_content(self, context_text: str, title: str, description: str) -> dict:
+        """
+        Generate detailed content for a specific phase.
+        Returns: { "content": str, "usage": dict }
+        """
+        from app.llm.prompts import PHASE_DETAIL_PROMPT
+        
+        prompt = PHASE_DETAIL_PROMPT.format(context=context_text, title=title, description=description)
+        try:
+             response = self.model.generate_content(prompt)
+             usage = {
+                 "prompt_tokens": response.usage_metadata.prompt_token_count,
+                 "completion_tokens": response.usage_metadata.candidates_token_count,
+                 "total_tokens": response.usage_metadata.total_token_count
+             }
+             return {"content": response.text, "usage": usage}
+        except Exception as e:
+            logger.error(f"Phase generation failed: {e}")
+            return {"content": "Failed to generate content.", "usage": {}}

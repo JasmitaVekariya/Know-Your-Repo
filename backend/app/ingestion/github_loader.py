@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 # Constants
 MAX_REPO_SIZE_MB = 50  # Hard limit for total repo size
-CLONE_TIMEOUT_SECONDS = 30  # Timeout for cloning operation
+CLONE_TIMEOUT_SECONDS = 60  # Timeout for cloning operation
 
 
 class CloneTimeoutError(Exception):
