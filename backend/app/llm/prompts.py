@@ -228,7 +228,9 @@ Your response must allow someone to understand this repository **without opening
 Failure to maintain structure or clarity is unacceptable.
 """
 
-MINDMAP_OUTLINE_PROMPT = """
+# Outline Prompts for different modes
+OUTLINE_PROMPTS = {
+    "architect": """
 You are a **Senior Software Architect** and **Codebase Archaeologist**.
 Your task is to create a structured **Learning Path (Mind Map)** for a developer to understand this repository.
 
@@ -236,11 +238,11 @@ Your task is to create a structured **Learning Path (Mind Map)** for a developer
 {context}
 
 ### PHASES DEFINITION
-You must generate a curriculum based on the following standard phases. 
-**ADAPTATION RULE**: Skip phases that are strictly irrelevant to this specific repository (e.g. skip "AI/ML" phase for a simple web app, skip "Persistence" if no DB).
-Sample Phases are given to you, you can add any other useful phase or remove unnecessary phases.
-Suppose if any project has main functionality then you can create a single phase for explaining that single phase.
-But if some project does not meet any of below phase then do not include for that.
+Generate a curriculum based on these standard architectural phases.
+**ADAPTATION RULE**: 
+- Skip phases irrelevant to this specific repo (e.g. skip "AI/ML" for a web app).
+- **CRITICAL**: If the project has a specific CORE feature (e.g. "Payment Gateway" or "Canvas Rendering"), create a dedicated phase for it.
+- **Dynamic Phases**: You have authority to add/remove phases to best fit the codebase.
 
 **PHASE 0 — Project Identity**
 (Name, domain, user, problem solved)
@@ -282,7 +284,7 @@ But if some project does not meet any of below phase then do not include for tha
 (Safest places to edit, New features, Common mistakes)
 
 **PHASE 13 — Code Quality Assessment**
-(Readability, Debt, Refactoring)
+(Technical debt, Refactoring opportunities)
 
 **PHASE 14 — Mental Model Summary**
 (Conceptual map, How to think about this repo)
@@ -299,9 +301,142 @@ Return a pure JSON list of objects. content MUST be null.
     }},
     ...
 ]
-
 **Critical**: Return ONLY valid JSON.
+""",
+
+    "extension": """
+You are a **Senior Feature Engineer**.
+Your task is to create a structured **Implementation Plan** for extending this repository.
+
+### INPUT CONTEXT
+{context}
+
+### PHASES DEFINITION
+Generate a practical guide for a developer who wants to ADD FEATURES.
+
+**PHASE 0 — Prerequisite Analysis**
+(What to understand before touching code)
+
+**PHASE 1 — Environment Setup for Devs**
+(Local dev environment quirks)
+
+**PHASE 2 — Core Extensibility Points**
+(Where hooks, plugins, or modules are designed to go)
+
+**PHASE 3 — Adding a New API Endpoint**
+(Walkthrough of adding a route/controller)
+
+**PHASE 4 — Adding a New UI Component / View**
+(Frontend extension workflow)
+
+**PHASE 5 — Database Schema Changes**
+(How to add fields/tables safely)
+
+**PHASE 6 — Business Logic Integration**
+(Where to place new service logic)
+
+**PHASE 7 — Safety & Anti-Patterns**
+(What NOT to touch)
+
+**PHASE 8 — Testing New Features**
+(How to add tests for new code)
+
+### JSON FORMAT
+Return a pure JSON list of objects. content MUST be null.
+[
+    {{
+        "step_id": 0,
+        "title": "Phase 0: Prerequisite Analysis",
+        "description": "Understanding the groundwork.",
+        "content": null,
+        "status": "pending" 
+    }},
+    ...
+]
+""",
+
+    "system_design": """
+You are a **Principal Systems Architect**.
+Your task is to create a **System Design Auditing Path** for this repository.
+
+### INPUT CONTEXT
+{context}
+
+### PHASES DEFINITION
+Focus on scale, reliability, and infrastructure.
+
+**PHASE 0 — System Overview & Scale Estimation**
+(Current scale vs theoretical limits)
+
+**PHASE 1 — Database & Persistence Design**
+(Schema analysis, indexing, sharding potential)
+
+**PHASE 2 — Caching Strategy**
+(Redis, CDN, App-level caching)
+
+**PHASE 3 — Asynchronous Processing**
+(Queues, Workers, Background jobs)
+
+**PHASE 4 — External Integrations & Resilience**
+(Circuit breakers, Retries, Timeouts)
+
+**PHASE 5 — Security & Auth Architecture**
+(OAuth, JWT, RBAC, Encryption)
+
+**PHASE 6 — Observability & Monitoring**
+(Logging, Metrics, Tracing implementation)
+
+**PHASE 7 — Deployment & Infrastructure**
+(Docker, K8s, CI/CD pipelines)
+
+**PHASE 8 — Bottleneck Analysis & Recommendations**
+(Critical critique of the design)
+
+### JSON FORMAT
+Return a pure JSON list of objects.
+""",
+
+    "debugger": """
+You are a **Staff Site Reliability Engineer (SRE)**.
+Your task is to create a **Debugging Handbook** for this repository.
+
+### INPUT CONTEXT
+{context}
+
+### PHASES DEFINITION
+Focus on troubleshooting, tracing, and fixing issues.
+
+**PHASE 0 — Error Handling Architecture**
+(How errors are caught and reported)
+
+**PHASE 1 — Logging Infrastructure**
+(Where logs go, log levels, parsing)
+
+**PHASE 2 — Common Failure Modes**
+(Known flaky areas, race conditions)
+
+**PHASE 3 — Debugging Tools & Scripts**
+(Repl, CLI tools, introspection)
+
+**PHASE 4 — Database Troubleshooting**
+(Connection pools, slow queries, locks)
+
+**PHASE 5 — Request Tracing Walkthrough**
+(Tracing a request ID through the stack)
+
+**PHASE 6 — Environment Debugging**
+(Config issues, secret management)
+
+**PHASE 7 — Critical Hotspots**
+(Complex logic prone to bugs)
+
+### JSON FORMAT
+Return a pure JSON list of objects.
 """
+}
+
+# Default prompt (fallback)
+MINDMAP_OUTLINE_PROMPT = OUTLINE_PROMPTS["architect"]
 
 PHASE_DETAIL_PROMPT = """
 You are a **Senior Software Architect** explaining a specific phase of the repository.

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { MessageSquare, Plus, LogOut, LayoutDashboard, Github, History, User, MoreHorizontal, Trash2, Star, Moon, Sun } from 'lucide-react';
+import { MessageSquare, Plus, LogOut, LayoutDashboard, Github, History, User, MoreHorizontal, Trash2, Star, Moon, Sun, SidebarClose } from 'lucide-react';
 import { useChat } from '../context/ChatContext';
 import { useTheme } from '../context/ThemeContext';
 import { api } from '../api/client';
@@ -133,8 +133,22 @@ const Sidebar = ({ isOpen, onClose }) => {
                 transform transition-all duration-200 ease-in-out
                 ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
             `} onClick={() => setActiveMenu(null)}>
+                {/* Sidebar Header with Collapse */}
+                <div className="flex items-center justify-between px-4 pt-4 pb-2">
+                    <div className="flex items-center space-x-2 text-gray-400">
+                        {/* Optional branding or just spacing */}
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
+                        title="Collapse menu"
+                    >
+                        <SidebarClose className="w-5 h-5" />
+                    </button>
+                </div>
+
                 {/* New Chat Button */}
-                <div className="p-4">
+                <div className="px-4 pb-4">
                     <button
                         onClick={handleNewChat}
                         className="w-full flex items-center justify-start space-x-3 px-4 py-3 
@@ -178,8 +192,12 @@ const Sidebar = ({ isOpen, onClose }) => {
                                                             : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-900'}
                                                     `}
                                                 >
-                                                    {chat.is_favorite ? <Star className="w-4 h-4 flex-shrink-0 text-yellow-500 fill-current" /> : <MessageSquare className="w-4 h-4 flex-shrink-0" />}
-                                                    <span className="truncate flex-1">{chat.repo_name || 'Unknown Repo'}</span>
+                                                    <div className="flex flex-col flex-1 min-w-0">
+                                                        <span className="truncate font-medium">{chat.repo_name || 'Unknown Repo'}</span>
+                                                        <span className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold">
+                                                            {chat.mode ? `${chat.mode}` : 'Architect'}
+                                                        </span>
+                                                    </div>
                                                 </button>
 
                                                 {/* Actions Menu Trigger */}

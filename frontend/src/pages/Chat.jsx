@@ -291,9 +291,11 @@ const Chat = () => {
                             <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">Analyzing repository architecture to build your learning path.</p>
                         </div>
                     ) : (
+
                         <MindMapPanel
                             mindMap={chatMetadata.mind_map}
                             currentStepIndex={chatMetadata.current_step_index || 0}
+                            mode={chatMetadata.mode}
                             onNext={handleNextStep}
                             onStepClick={handleStepClick}
                             onRetry={() => loadPhaseContent(chatMetadata.current_step_index, chatMetadata.mind_map)}
@@ -305,11 +307,11 @@ const Chat = () => {
                 {/* Right Panel (60%) - Chat */}
                 <div className="w-[60%] h-full bg-white dark:bg-gray-900">
                     <div className="h-full relative flex flex-col">
-                        {/* Minimal Header */}
-                        <div className="flex-shrink-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center z-10">
+                        {/* Minimal Header - MATCHING HEIGHT WITH MINDMAP PANEL */}
+                        <div className="flex-shrink-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm px-4 py-4 h-[72px] border-b border-gray-100 dark:border-gray-800 flex justify-between items-center z-10">
                             <div>
-                                <span className="text-xs font-bold text-blue-600 uppercase tracking-wider block">Interactive Mode</span>
-                                <h1 className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate max-w-[300px]">
+                                <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest leading-tight block">Interactive Mode</span>
+                                <h1 className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate max-w-[300px] leading-tight mt-0.5">
                                     {chatMetadata?.repo_name || 'Repository Chat'}
                                 </h1>
                             </div>

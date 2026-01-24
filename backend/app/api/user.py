@@ -171,6 +171,7 @@ async def get_user_chat_history(user_id: str):
             "session_id": chat["chat_id"],
             "repo_url": chat["repo_url"],
             "repo_name": chat.get("repo_name", "Unknown Repo"),
+            "mode": chat.get("mode", "architect"),
             "created_at": chat["created_at"],
             "is_favorite": chat.get("is_favorite", False)
         })

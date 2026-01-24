@@ -3,7 +3,7 @@ import { CheckCircle, Circle, ArrowRight, BookOpen } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import CodeBlock from '../components/CodeBlock';
 
-const MindMapPanel = ({ mindMap, currentStepIndex, onNext, onStepClick, onRetry, processingNext }) => {
+const MindMapPanel = ({ mindMap, currentStepIndex, mode, onNext, onStepClick, onRetry, processingNext }) => {
     if (!mindMap || mindMap.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center h-full text-gray-500 p-8">
@@ -17,15 +17,18 @@ const MindMapPanel = ({ mindMap, currentStepIndex, onNext, onStepClick, onRetry,
 
     return (
         <div className="flex flex-col h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800">
-            {/* Header */}
-            <div className="p-4 border-b border-gray-200 dark:border-gray-800">
-                <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100 flex items-center">
-                    <BookOpen className="w-5 h-5 mr-2 text-blue-600" />
-                    Learning Path
+            {/* Header - MATCHING HEIGHT WITH CHAT PANEL (h-[72px]) */}
+            <div className="flex-shrink-0 px-4 py-4 h-[72px] border-b border-gray-200 dark:border-gray-800 flex flex-col justify-center">
+                <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest leading-tight block mb-0.5">
+                    {mode ? `${mode} Mode` : 'Learning Path'}
+                </span>
+                <h2 className="text-sm font-bold text-gray-800 dark:text-gray-100 flex items-center leading-tight">
+                    <BookOpen className="w-4 h-4 mr-2 text-gray-500" />
+                    Curriculum
                 </h2>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mt-3">
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1 mt-2">
                     <div
-                        className="bg-blue-600 h-1.5 rounded-full transition-all duration-500"
+                        className="bg-blue-600 h-1 rounded-full transition-all duration-500"
                         style={{ width: `${((currentStepIndex + 1) / mindMap.length) * 100}%` }}
                     ></div>
                 </div>
@@ -130,15 +133,15 @@ const MindMapPanel = ({ mindMap, currentStepIndex, onNext, onStepClick, onRetry,
             </div>
 
             {/* Footer Action */}
-            <div className="p-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 flex justify-end">
+            <div className="p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex justify-end">
                 <button
                     onClick={onNext}
                     disabled={currentStepIndex >= mindMap.length - 1 || processingNext}
-                    className="flex items-center px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-lg hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
+                    className="flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-sm"
                 >
                     {processingNext ? (
                         <>
-                            <div className="w-4 h-4 border-2 border-gray-400 border-t-white dark:border-t-black rounded-full animate-spin mr-2"></div>
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
                             Analyzing Next Phase...
                         </>
                     ) : (

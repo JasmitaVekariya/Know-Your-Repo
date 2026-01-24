@@ -351,7 +351,7 @@ async def toggle_favorite(session_id: str, user: TokenData = Depends(get_current
     return {"session_id": session_id, "is_favorite": new_status}
 
 @router.post("/{session_id}/phase/generate")
-async def generate_phase(session_id: str, request: Dict[str, int]):
+async def generate_phase(session_id: str, request: Dict[str, int], user: TokenData = Depends(get_current_user)):
     """
     Generate detailed content for a specific phase (lazy load).
     """
@@ -392,11 +392,25 @@ async def generate_phase(session_id: str, request: Dict[str, int]):
         context_text = "\\n".join(context_str_list)
         
         gemini = get_gemini_client()
-        content = gemini.generate_phase_content(context_text, step["title"], step["description"])
+        result = gemini.generate_phase_content(context_text, step["title"], step["description"])
+        
+        content = result.get("content", "Failed to generate")
+        usage = result.get("usage", {})
         
         # Update DB
         mind_map[step_index]["content"] = content
         await mongo_client.update_chat_mind_map(session_id, mind_map)
+        
+        # --- USAGE TRACKING ---
+        if usage:
+            try:
+                from app.utils.pricing import calculate_gemini_cost
+                # Explicitly use user.user_id from Depends
+                cost = calculate_gemini_cost("gemini-2.0-flash", usage['prompt_tokens'], usage['completion_tokens'])
+                await mongo_client.update_user_usage(user.user_id, usage['total_tokens'], cost)
+                logger.info(f"Phase {step_index} generated: {usage['total_tokens']} tokens, ${cost:.6f}")
+            except Exception as e_track:
+                logger.error(f"Failed to track token usage for phase: {e_track}")
         
         return {"step_index": step_index, "content": content, "status": "generated"}
         

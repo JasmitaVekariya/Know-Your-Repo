@@ -132,8 +132,9 @@ async def run_ingestion_pipeline(session_id: str, repo_url: str, user_id: str, m
             except Exception as e:
                 logger.error(f"Vector store failed: {e}")
         
-        # Step 7: Mind Map Generation (Only for Architect Mode)
-        if mode == "architect":
+        # Step 7: Mind Map Generation (For All Modes)
+        # We now support architect, extension, system_design
+        if mode in ["architect", "extension", "system_design", "debugger"]:
              try:
                  # Construct context for Mind Map (Manifest + Entry Points)
                  # We reuse the manifest generated earlier
@@ -142,15 +143,31 @@ async def run_ingestion_pipeline(session_id: str, repo_url: str, user_id: str, m
                  context_for_mm = f"Repo URL: {repo_url}\nManifest: {manifest_str[:15000]}"
                  
                  from app.api.chat import get_gemini_client
+                 from app.api.chat import get_gemini_client
                  gemini = get_gemini_client()
-                 mm_json_str = gemini.generate_mind_map(context_for_mm)
+                 # Pass the mode to select the correct prompting strategy
+                 mm_result = gemini.generate_mind_map(context_for_mm, mode=mode)
                  
+                 mm_json_str = mm_result.get("content", "[]")
+                 mm_usage = mm_result.get("usage", {})
+
                  # Clean JSON (remove markdown fences if present)
                  import json
                  clean_json = mm_json_str.replace("```json", "").replace("```", "").strip()
                  mind_map_data = json.loads(clean_json)
                  
-                 # Store in Mongo - Wait! Generate Phase 1 Content immediately.
+                 # Store in Mongo - Update Usage First
+                 from app.db.mongo import get_mongo_client
+                 mongo_client = get_mongo_client()
+                 
+                 # --- USAGE TRACKING (Mind Map) ---
+                 if mm_usage and mongo_client:
+                     from app.utils.pricing import calculate_gemini_cost
+                     price_mm = calculate_gemini_cost("gemini-2.0-flash", mm_usage['prompt_tokens'], mm_usage['completion_tokens'])
+                     await mongo_client.update_user_usage(user_id, mm_usage['total_tokens'], price_mm)
+                     logger.info(f"Mind Map tracked: {mm_usage['total_tokens']} tokens, ${price_mm:.6f}")
+                 
+                 # Wait! Generate Phase 1 Content immediately.
                  if mind_map_data and len(mind_map_data) > 0:
                      first_step = mind_map_data[0]
                      try:
@@ -164,21 +181,35 @@ async def run_ingestion_pipeline(session_id: str, repo_url: str, user_id: str, m
                                  # Ensure collection is ready? usually immediate.
                                  context_chunks = chroma_client.query(session_id, query, top_k=5)
                                  if context_chunks:
-                                     context_text_phase1 = "\n".join(context_chunks)
+                                     # Results are usually list of dicts or list of strings depending on client
+                                     # Let's extract safely
+                                     context_str_list = [c.get("content", "") for c in context_chunks if isinstance(c, dict)]
+                                     if not context_str_list and isinstance(context_chunks, list):
+                                         context_str_list = [str(c) for c in context_chunks if isinstance(c, str)]
+                                     context_text_phase1 = "\n".join(context_str_list)
                              except Exception as vector_e:
                                  logger.warning(f"Vector query for Phase 1 failed: {vector_e}")
                          
                          # Generate Detailed Content
-                         phase1_content = gemini.generate_phase_content(context_text_phase1, first_step['title'], first_step['description'])
+                         phase1_result = gemini.generate_phase_content(context_text_phase1, first_step['title'], first_step['description'])
+                         phase1_content = phase1_result.get("content", "Failed")
+                         phase1_usage = phase1_result.get("usage", {})
+                         
                          mind_map_data[0]["content"] = phase1_content
+                         
+                         # --- USAGE TRACKING (Phase 1) ---
+                         if phase1_usage and mongo_client:
+                             from app.utils.pricing import calculate_gemini_cost
+                             price_p1 = calculate_gemini_cost("gemini-2.0-flash", phase1_usage['prompt_tokens'], phase1_usage['completion_tokens'])
+                             await mongo_client.update_user_usage(user_id, phase1_usage['total_tokens'], price_p1)
+                             logger.info(f"Phase 1 tracked: {phase1_usage['total_tokens']} tokens, ${price_p1:.6f}")
+                             
                          logger.info("Phase 1 content generated successfully during ingestion.")
                          
                      except Exception as p1_e:
                          logger.error(f"Phase 1 generation failed: {p1_e}")
                  
                  # Store in Mongo
-                 from app.db.mongo import get_mongo_client
-                 mongo_client = get_mongo_client()
                  if mongo_client:
                      await mongo_client.update_chat_mind_map(session_id, mind_map_data)
                      
