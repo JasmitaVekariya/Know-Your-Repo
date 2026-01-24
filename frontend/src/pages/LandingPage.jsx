@@ -281,17 +281,6 @@ const LandingPage = () => {
                             View Demo
                         </button>
                     </div>
-
-                    {/* Social Proof */}
-                    <div className="mt-20 pt-10 border-t border-gray-100 dark:border-gray-800/50">
-                        <p className="text-sm font-medium text-gray-500 mb-8 uppercase tracking-widest">Trusted by engineers at top companies</p>
-                        <div className="flex flex-wrap justify-center gap-12 opacity-50 grayscale hover:grayscale-0 transition-all duration-500">
-                            {/* Placeholders for logos */}
-                            {['Google', 'Microsoft', 'Spotify', 'GitHub'].map(name => (
-                                <span key={name} className="text-xl font-bold text-gray-400 dark:text-gray-600">{name}</span>
-                            ))}
-                        </div>
-                    </div>
                 </div>
             </header>
 
