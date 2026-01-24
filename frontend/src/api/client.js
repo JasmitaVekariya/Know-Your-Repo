@@ -7,6 +7,7 @@ const client = axios.create({
     headers: {
         'Content-Type': 'application/json',
     },
+    timeout: 120000, // 2 minutes
 });
 
 // Add Auth Interceptor
@@ -37,15 +38,20 @@ export const api = {
     getDashboard: (userId, days = 30) => client.get(`/user/${userId}/dashboard?days=${days}`),
 
     // Ingest
-    ingestRepo: (repoUrl, userId) => client.post('/ingest', { repo_url: repoUrl, user_id: userId }),
+    ingestRepo: (repoUrl, userId, mode) => client.post('/ingest', { repo_url: repoUrl, user_id: userId, mode }),
     resumeSession: (sessionId, repoUrl) => client.post(`/ingest/${sessionId}/resume`, { repo_url: repoUrl }),
 
     // Chat
     getChats: (userId) => client.get(`/user/${userId}/chats`),
     getChatHistory: (sessionId) => client.get(`/chat/${sessionId}/history`),
+    getChatMetadata: (sessionId) => client.get(`/chat/${sessionId}/metadata`),
+    updateChatStep: (sessionId, stepIndex) => client.post(`/chat/${sessionId}/step`, { step_index: stepIndex }),
+    generatePhaseContent: (sessionId, stepIndex) => client.post(`/chat/${sessionId}/phase/generate`, { step_index: stepIndex }),
     chat: (userId, sessionId, message) => client.post('/chat', {
         user_id: userId,
         session_id: sessionId,
         message
     }),
+    deleteChat: (sessionId) => client.delete(`/chat/${sessionId}`),
+    toggleFavorite: (sessionId) => client.post(`/chat/${sessionId}/favorite`),
 };

@@ -11,6 +11,7 @@ router = APIRouter()
 class UserCreate(BaseModel):
     email: str
     password: str
+    name: str = None  # Add name field
 
 @router.post("/register", response_model=Token)
 async def register(user: UserCreate):
@@ -30,6 +31,7 @@ async def register(user: UserCreate):
                 # Legacy user claiming account
                 user_id = existing["user_id"]
                 await client.update_user_password(user_id, hashed_password)
+                # Should we update name too if missing?
             else:
                 raise HTTPException(status_code=400, detail="Email already registered")
         else:
@@ -38,6 +40,7 @@ async def register(user: UserCreate):
             user_data = {
                 "user_id": user_id,
                 "email": user.email,
+                "name": user.name or user.email.split('@')[0], # Fallback to email prefix
                 "hashed_password": hashed_password,
                 "created_at": datetime.utcnow(),
                 "total_tokens": 0,

@@ -66,6 +66,14 @@ class MongoClientWrapper:
         if self.db is not None:
             await self.db.chats.insert_one(chat_data)
 
+    async def get_chat(self, chat_id: str) -> Optional[dict]:
+        """
+        Get a chat session by ID.
+        """
+        if self.db is not None:
+             return await self.db.chats.find_one({"chat_id": chat_id})
+        return None
+
     async def save_prompt(self, prompt_data: dict) -> None:
         """
         Save prompt record to MongoDB (prompts collection).
@@ -191,11 +199,32 @@ class MongoClientWrapper:
     
     async def get_user_chats(self, user_id: str) -> list:
         """
-        Get all chat sessions for a user, sorted by recency.
+        Get all chat sessions for a user, sorted by favorite then recency.
         """
         if self.db is not None:
+             # 1. Get user favorites
+             user = await self.db.users.find_one({"user_id": user_id}, {"favorites": 1})
+             favorites = set(user.get("favorites", [])) if user else set()
+
+             # 2. Get chats
              cursor = self.db.chats.find({"user_id": user_id}).sort("created_at", -1)
-             return await cursor.to_list(length=100) # Cap at 100 for now
+             chats = await cursor.to_list(length=100)
+
+             # 3. Merge favorite status
+             for chat in chats:
+                 chat["is_favorite"] = chat["chat_id"] in favorites
+             
+             # 4. Sort in memory (Favorite first, then date)
+             chats.sort(key=lambda x: (not x["is_favorite"], x["created_at"]), reverse=False) 
+             # False means True (is_favorite=True) comes before False? No.
+             # tuple comparison: (False, timestamp) vs (True, timestamp)
+             # We want Favorites (True) first.
+             # True > False in Python.
+             # So sorting by is_favorite descending puts True first.
+             # Sorting by created_at descending puts newer first.
+             chats.sort(key=lambda x: (x["is_favorite"], x["created_at"]), reverse=True)
+
+             return chats
         return []
 
     async def get_chat_history(self, chat_id: str) -> list:
@@ -206,6 +235,65 @@ class MongoClientWrapper:
             cursor = self.db.prompts.find({"chat_id": chat_id}).sort("timestamp", 1)
             return await cursor.to_list(length=500)
         return []
+
+    async def delete_chat(self, chat_id: str, user_id: str) -> bool:
+        """Delete a chat session and its history."""
+        if self.db is not None:
+            # Verify ownership
+            result = await self.db.chats.delete_one({"chat_id": chat_id, "user_id": user_id})
+            if result.deleted_count > 0:
+                # Also delete prompts/messages
+                await self.db.prompts.delete_many({"chat_id": chat_id})
+                # Remove from favorites if present
+                await self.db.users.update_one(
+                    {"user_id": user_id},
+                    {"$pull": {"favorites": chat_id}}
+                )
+                return True
+        return False
+
+    async def toggle_favorite(self, chat_id: str, user_id: str) -> bool:
+        """Toggle the is_favorite status of a chat in User collection."""
+        if self.db is not None:
+            # Check current status
+            user = await self.db.users.find_one({"user_id": user_id}, {"favorites": 1})
+            favorites = user.get("favorites", []) if user else []
+            
+            is_fav = chat_id in favorites
+            new_status = not is_fav
+
+            if new_status:
+                # Add to favorites
+                await self.db.users.update_one(
+                    {"user_id": user_id},
+                    {"$addToSet": {"favorites": chat_id}}
+                )
+            else:
+                # Remove from favorites
+                await self.db.users.update_one(
+                    {"user_id": user_id},
+                    {"$pull": {"favorites": chat_id}}
+                )
+            return new_status
+        return False
+        
+    async def update_chat_mind_map(self, chat_id: str, mind_map: list) -> None:
+        """
+        Update the mind map structure for a chat.
+        """
+        if self.db is not None:
+            await self.db.chats.update_one(
+                {"chat_id": chat_id},
+                {"$set": {"mind_map": mind_map, "current_step_index": 0}}
+            )
+
+    async def update_chat_step(self, chat_id: str, step_index: int) -> None:
+        """Update current step index."""
+        if self.db is not None:
+             await self.db.chats.update_one(
+                {"chat_id": chat_id},
+                {"$set": {"current_step_index": step_index}}
+            )
 
 # Global instance
 mongo_client = None

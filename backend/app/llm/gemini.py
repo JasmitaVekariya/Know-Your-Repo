@@ -59,3 +59,31 @@ class GeminiClient:
         except Exception as e:
             logger.error(f"Gemini streaming failed: {e}")
             raise e
+    
+    def generate_mind_map(self, context_text: str) -> str:
+        """
+        Generate a JSON mind map curriculum (Outline Only).
+        """
+        from app.llm.prompts import MINDMAP_OUTLINE_PROMPT
+        
+        prompt = MINDMAP_OUTLINE_PROMPT.format(context=context_text)
+        try:
+             response = self.model.generate_content(prompt)
+             return response.text
+        except Exception as e:
+            logger.error(f"Mind Map generation failed: {e}")
+            return "[]" # Return empty list on failure
+
+    def generate_phase_content(self, context_text: str, title: str, description: str) -> str:
+        """
+        Generate detailed content for a specific phase.
+        """
+        from app.llm.prompts import PHASE_DETAIL_PROMPT
+        
+        prompt = PHASE_DETAIL_PROMPT.format(context=context_text, title=title, description=description)
+        try:
+             response = self.model.generate_content(prompt)
+             return response.text
+        except Exception as e:
+            logger.error(f"Phase generation failed: {e}")
+            return "Failed to generate content."

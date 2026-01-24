@@ -12,21 +12,26 @@ class SessionManager:
         """Initialize session manager with empty store."""
         self._sessions: Dict[str, dict] = {}
     
-    def create_session(self, repo_url: Optional[str] = None) -> str:
+    def create_session(self, repo_url: Optional[str] = None, session_id: Optional[str] = None) -> str:
         """
         Create a new session.
         
         Args:
             repo_url: Optional repository URL associated with session
+            session_id: Optional specific session ID (used for restoration)
             
         Returns:
             Session ID (UUID string)
         """
-        session_id = str(uuid.uuid4())
+        if not session_id:
+            session_id = str(uuid.uuid4())
+            
+        now = datetime.now().isoformat()
         self._sessions[session_id] = {
             "session_id": session_id,
             "repo_url": repo_url,
-            "created_at": datetime.now().isoformat(),
+            "created_at": now,
+            "last_accessed": now,
             "status": "initialized"
         }
         return session_id
@@ -43,6 +48,43 @@ class SessionManager:
         """
         return self._sessions.get(session_id)
     
+    def touch_session(self, session_id: str) -> bool:
+        """
+        Update the last accessed timestamp for a session.
+        
+        Args:
+           session_id: Session identifier
+
+        Returns:
+            True if session exists and was updated, False otherwise
+        """
+        if session_id in self._sessions:
+            self._sessions[session_id]["last_accessed"] = datetime.now().isoformat()
+            return True
+        return False
+
+    def resurrect_session(self, session_id: str) -> bool:
+        """
+        Attempt to resurrect a session that exists in DB/Chroma but not in memory.
+        This is a placeholder for logic that might check persistent storage.
+        For now, it just returns False as we rely on explicit creation.
+        
+        Refined Logic: If the user provides a session_id that isn't in memory,
+        we can optimistically re-create the session wrapper if we trust it exists downstream.
+        """
+        # Simplistic resurrection: If meaningful data exists elsewhere, 
+        # we treat it as valid. For now, we will create a shell.
+        # This will be called if get_session fails but we want to try to allow it.
+        now = datetime.now().isoformat()
+        self._sessions[session_id] = {
+            "session_id": session_id,
+            "repo_url": "unknown", # Recovered session
+            "created_at": now,
+            "last_accessed": now,
+            "status": "recovered"
+        }
+        return True
+
     def delete_session(self, session_id: str) -> bool:
         """
         Delete a session.
@@ -71,6 +113,8 @@ class SessionManager:
         """
         if session_id in self._sessions:
             self._sessions[session_id].update(kwargs)
+            # Also touch
+            self._sessions[session_id]["last_accessed"] = datetime.now().isoformat()
             return True
         return False
     

@@ -14,12 +14,18 @@ class UserRegisterRequest(BaseModel):
     email: str
     name: Optional[str] = None
 
+from typing import Optional, Union, Any
+
 class UserResponse(BaseModel):
     """Response model for user data."""
     user_id: str
     email: str
     name: Optional[str] = None
-    created_at: str
+    created_at: Union[datetime, str]
+    
+    class Config:
+        extra = "ignore" 
+        # Pydantic v2: model_config = ConfigDict(extra='ignore')
 
 @router.post("/register", response_model=UserResponse)
 async def register_user(request: UserRegisterRequest):
@@ -79,12 +85,17 @@ async def get_user(user_id: str):
     user = await users_collection.find_one({"user_id": user_id})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+        
+    # Validation/Cleanup for legacy users
+    if not user.get("name"):
+        user["name"] = user["email"].split("@")[0]
     
     return UserResponse(**user)
 
 class DashboardResponse(BaseModel):
     """Response model for user dashboard."""
     user_id: str
+    name: Optional[str] = None
     total_prompts: int
     total_tokens: int
     total_due_price: float
@@ -133,6 +144,7 @@ async def get_user_dashboard(user_id: str, days: int = 30, current_user: TokenDa
     
     return DashboardResponse(
         user_id=user["user_id"],
+        name=user.get("name") or user.get("email", "").split("@")[0],
         total_prompts=prompt_count,
         total_tokens=user.get("total_tokens", 0),
         total_due_price=round(total_due, 4),
@@ -159,7 +171,8 @@ async def get_user_chat_history(user_id: str):
             "session_id": chat["chat_id"],
             "repo_url": chat["repo_url"],
             "repo_name": chat.get("repo_name", "Unknown Repo"),
-            "created_at": chat["created_at"]
+            "created_at": chat["created_at"],
+            "is_favorite": chat.get("is_favorite", False)
         })
         
     return formatted_chats
