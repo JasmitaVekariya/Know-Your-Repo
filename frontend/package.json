@@ -1,5 +1,6 @@
 {
-  "name": "frontend",
+  "name": "github-repo-intelligence-frontend",
+  "description": "React frontend for GitHub Repo Intelligence Agent - AI-powered repository analysis and feature planning tool",
   "private": true,
   "version": "0.0.0",
   "type": "module",
