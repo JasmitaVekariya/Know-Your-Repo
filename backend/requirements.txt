@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+python-dotenv
+pydantic
+gitpython
+tiktoken
+chromadb
+langchain
+motor
