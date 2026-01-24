@@ -1,6 +1,34 @@
 # GitHub Repo Intelligence Agent
 
-An AI-powered developer tool that ingests public GitHub repositories, analyzes their architecture, and helps plan new features with detailed implementation guidance.
+> An AI-powered developer tool that helps you understand and plan features for any public GitHub repository
+
+## 📖 About
+
+**Know Your Repo** is an intelligent repository analysis tool that leverages AI to help developers quickly understand codebases and plan new features. By ingesting and analyzing GitHub repositories, it provides:
+
+- **Deep Code Understanding**: Automatically analyzes repository structure, architecture, and code flow
+- **Interactive Q&A**: Chat with an AI agent that understands your repository's context
+- **Feature Planning**: Get detailed implementation plans including architecture changes, files to modify, and step-by-step guidance
+- **Visual Documentation**: Auto-generated Mermaid diagrams for architecture visualization
+
+Perfect for developers who need to quickly onboard to new projects, plan features, or understand complex codebases.
+
+## 🎯 Use Cases
+
+- **Rapid Onboarding**: Quickly understand new codebases without spending hours reading documentation
+- **Feature Development**: Get AI-powered suggestions on how to implement new features
+- **Code Review**: Understand the architecture before reviewing pull requests
+- **Documentation**: Generate architecture diagrams and explanations
+- **Learning**: Study open-source projects more efficiently
+
+## 🔍 How It Works
+
+1. **Repository Ingestion**: Provide any public GitHub repository URL
+2. **Intelligent Analysis**: The system clones, parses, and chunks the repository into meaningful segments
+3. **Vector Storage**: Code is embedded and stored in ChromaDB for semantic search
+4. **AI Processing**: Google Gemini analyzes the repository structure and content
+5. **Interactive Chat**: Ask questions or request feature plans through a conversational interface
+6. **Visual Output**: Get detailed explanations, implementation plans, and Mermaid diagrams
 
 ## 🚀 Features
 
@@ -146,5 +174,16 @@ KYR/
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 👨‍💻 Author
+
+**Jasmita Vekariya**
+- GitHub: [@JasmitaVekariya](https://github.com/JasmitaVekariya)
+
+## 🌟 Repository Description
+
+**AI-powered GitHub repository analyzer that helps developers understand codebases and plan features with intelligent insights and visualizations**
+
+*This description can be used for the GitHub repository settings to help others discover and understand this project.*
 
 ---

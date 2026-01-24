@@ -1,5 +1,3 @@
-"""Session cleanup utilities for managing expired sessions and their associated data."""
-
 import logging
 import asyncio
 from datetime import datetime, timedelta

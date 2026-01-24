@@ -1,5 +1,3 @@
-"""Authentication API endpoints for user registration and login."""
-
 from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 from app.db.mongo import get_mongo_client
