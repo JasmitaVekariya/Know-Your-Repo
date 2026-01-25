@@ -327,7 +327,7 @@ const Chat = () => {
                                     {chatMetadata?.repo_name || 'Repository Chat'}
                                 </h1>
                             </div>
-                            <button onClick={() => navigate('/')} className="text-gray-400 hover:text-gray-600 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                            <button onClick={() => navigate('/new')} className="text-gray-400 hover:text-gray-600 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                                 <ArrowLeft className="w-5 h-5" />
                             </button>
                         </div>
@@ -349,7 +349,7 @@ const Chat = () => {
             <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center shadow-sm">
                 <div>
                     <h1 className="text-lg font-bold text-gray-800 dark:text-white flex items-center">
-                        <button onClick={() => navigate('/')} className="mr-3 text-gray-500 hover:text-gray-700">
+                        <button onClick={() => navigate('/new')} className="mr-3 text-gray-500 hover:text-gray-700">
                             <ArrowLeft className="w-5 h-5" />
                         </button>
                         {chatMetadata?.repo_name ? `Chat: ${chatMetadata.repo_name}` : 'Repository Chat'}
