@@ -7,7 +7,33 @@ import CodeBlock from '../components/CodeBlock';
 import MermaidRenderer from '../components/MermaidRenderer';
 import MindMapPanel from './MindMapPanel';
 
+// Define components outside to prevent re-creation on every render
+const markdownComponents = {
+    code({ node, inline, className, children, ...props }) {
+        const match = /language-(\w+)/.exec(className || '');
+        const language = match ? match[1] : '';
+        const content = String(children).replace(/\n$/, '');
+        const isInline = inline || (!match && content.length < 50 && !content.includes('\n'));
+
+        // Handle Mermaid diagrams
+        if (language === 'mermaid' && !isInline) {
+            return <MermaidRenderer chart={content} />;
+        }
+
+        if (!isInline) {
+            return (
+                <CodeBlock className={className} {...props}>
+                    {children}
+                </CodeBlock>
+            );
+        }
+        return <code className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-blue-600 dark:text-blue-400 font-mono text-sm font-semibold" {...props}>{children}</code>;
+    }
+};
+
 const Chat = () => {
+    // ... (rest of component remains same)
+
     const { sessionId } = useParams();
     const userId = localStorage.getItem('user_id');
     const [messages, setMessages] = useState([]);
@@ -205,28 +231,7 @@ const Chat = () => {
                                 }`}>
                                 <div className={`markdown-body text-sm leading-relaxed ${msg.role === 'bot' ? '' : ''}`}>
                                     <ReactMarkdown
-                                        components={{
-                                            code({ node, inline, className, children, ...props }) {
-                                                const match = /language-(\w+)/.exec(className || '');
-                                                const language = match ? match[1] : '';
-                                                const content = String(children).replace(/\n$/, '');
-                                                const isInline = inline || (!match && content.length < 50 && !content.includes('\n'));
-
-                                                // Handle Mermaid diagrams
-                                                if (language === 'mermaid' && !isInline) {
-                                                    return <MermaidRenderer chart={content} />;
-                                                }
-
-                                                if (!isInline) {
-                                                    return (
-                                                        <CodeBlock className={className} {...props}>
-                                                            {children}
-                                                        </CodeBlock>
-                                                    );
-                                                }
-                                                return <code className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-blue-600 dark:text-blue-400 font-mono text-sm font-semibold" {...props}>{children}</code>;
-                                            }
-                                        }}
+                                        components={markdownComponents}
                                     >
                                         {msg.content}
                                     </ReactMarkdown>
@@ -290,7 +295,7 @@ const Chat = () => {
         return (
             <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
                 {/* Left Panel (40%) - Mind Map */}
-                <div className="w-[40%] h-full flex-shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+                <div className="w-[60%] h-full flex-shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
                     {(!chatMetadata || !chatMetadata.mind_map || chatMetadata.mind_map.length === 0) ? (
                         <div className="flex flex-col items-center justify-center h-full p-8 text-center">
                             <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
@@ -312,7 +317,7 @@ const Chat = () => {
                 </div>
 
                 {/* Right Panel (60%) - Chat */}
-                <div className="w-[60%] h-full bg-white dark:bg-gray-900">
+                <div className="w-[40%] h-full bg-white dark:bg-gray-900">
                     <div className="h-full relative flex flex-col">
                         {/* Minimal Header - MATCHING HEIGHT WITH MINDMAP PANEL */}
                         <div className="flex-shrink-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm px-4 py-4 h-[72px] border-b border-gray-100 dark:border-gray-800 flex justify-between items-center z-10">
