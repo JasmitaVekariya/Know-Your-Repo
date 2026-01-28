@@ -107,7 +107,7 @@ class MongoClientWrapper:
             # self.db.users.create_index("email", unique=True) # Good practice to ensure uniqueness
             await self.db.users.insert_one(user_data)
             
-    async def update_user_usage(self, user_id: str, tokens: int, price: float) -> None:
+    async def update_user_usage(self, user_id: str, tokens: int, price: float, prompts: int = 1) -> None:
         """
         Increment user usage totals.
         """
@@ -117,7 +117,8 @@ class MongoClientWrapper:
                 {
                     "$inc": {
                         "total_tokens": tokens,
-                        "total_due_price": price
+                        "total_due_price": price,
+                        "prompt_count": prompts
                     },
                     "$set": {"updated_at": datetime.utcnow()}
                 }
