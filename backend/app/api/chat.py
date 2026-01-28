@@ -62,6 +62,19 @@ async def chat(request: ChatRequest, background_tasks: BackgroundTasks, user: To
     Returns:
         ChatResponse with answer
     """
+    # Verifying User Usage Limit
+    from app.db.mongo import get_mongo_client
+    mongo_client = get_mongo_client()
+    
+    current_user = await mongo_client.get_user(user.user_id)
+    if current_user:
+        prompt_count = current_user.get("prompt_count", 0)
+        if prompt_count >= 5:
+             logger.info(f"User {user.user_id} reached prompt limit ({prompt_count})")
+             return ChatResponse(
+                 answer="Usage limit reached. You have consumed your 5 free Gemini prompts. Please contact support or upgrade for more."
+             )
+
     # Verify session exists
     session = session_manager.get_session(request.session_id)
     
@@ -242,7 +255,7 @@ async def chat(request: ChatRequest, background_tasks: BackgroundTasks, user: To
                 "created_at": datetime.utcnow()
             })
             
-        await mongo_client.update_user_usage(user_id, total_tokens, price)
+        await mongo_client.update_user_usage(user_id, total_tokens, price, prompts=1)
         
         logger.info(f"Chat tracked: {total_tokens} tokens, ${price:.6f}")
         

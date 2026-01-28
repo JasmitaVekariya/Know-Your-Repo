@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import mermaid from 'mermaid';
 
 const MermaidRenderer = ({ chart }) => {
-    const elementRef = useRef(null);
     const [svg, setSvg] = useState('');
     const [error, setError] = useState(null);
 
@@ -10,6 +9,7 @@ const MermaidRenderer = ({ chart }) => {
         // Initialize mermaid with enhanced configuration
         mermaid.initialize({
             startOnLoad: false,
+            suppressErrorRendering: true, // CRITICAL: Tell Mermaid not to render error diagrams
             theme: 'base',
             themeVariables: {
                 primaryColor: '#4F46E5',
@@ -44,6 +44,17 @@ const MermaidRenderer = ({ chart }) => {
         const renderDiagram = async () => {
             if (!chart) return;
 
+            // PRE-VALIDATION: Aggressively fail bad syntax before Mermaid sees it
+            // This prevents the "Parse error" causing UI glitches
+            if (chart.includes("['") || chart.includes("']") || chart.includes('["') || chart.includes('"]')) {
+                setError("Invalid syntax detected");
+                return;
+            }
+            if (chart.includes("[image][url]")) {
+                setError("Invalid syntax detected");
+                return;
+            }
+
             try {
                 // Generate unique ID for this diagram
                 const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
@@ -53,22 +64,21 @@ const MermaidRenderer = ({ chart }) => {
                 console.error = () => { }; // Temporarily disable console.error
 
                 // Render the diagram
+                // Note: We use a try-catch block specifically around render
                 const { svg: renderedSvg } = await mermaid.render(id, chart);
 
                 // Restore console.error
                 console.error = originalConsoleError;
 
-                setSvg(renderedSvg);
-                setError(null);
+                if (renderedSvg) {
+                    setSvg(renderedSvg);
+                    setError(null);
+                } else {
+                    setError("No SVG generated");
+                }
             } catch (err) {
                 // Restore console.error if it was suppressed
                 console.error = console.error || (() => { });
-
-                // Only log to console in development
-                if (process.env.NODE_ENV === 'development') {
-                    console.warn('Mermaid rendering error:', err);
-                }
-
                 setError(err.message || 'Failed to render diagram');
             }
         };
@@ -76,13 +86,8 @@ const MermaidRenderer = ({ chart }) => {
         renderDiagram();
     }, [chart]);
 
-    if (error) {
-        // Silently fail - don't show error messages to user
-        // Backend validation should have caught this, but if it didn't, just hide it
-        return null;
-    }
-
-    if (!svg) {
+    // ABSOLUTE ZERO HEIGHT ON ERROR
+    if (error || !svg) {
         return null;
     }
 
@@ -94,4 +99,5 @@ const MermaidRenderer = ({ chart }) => {
     );
 };
 
-export default MermaidRenderer;
+// Optimization: Prevent re-renders if chart content hasn't changed
+export default React.memo(MermaidRenderer);

@@ -34,7 +34,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
     const handleLogout = () => {
         localStorage.removeItem('user_id');
-        navigate('/login');
+        navigate('/');
     };
 
     const handleDashboard = () => {

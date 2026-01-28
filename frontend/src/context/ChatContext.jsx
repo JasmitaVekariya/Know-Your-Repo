@@ -14,28 +14,43 @@ export const useChat = () => {
 export const ChatProvider = ({ children }) => {
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(false);
-    const userId = localStorage.getItem('user_id');
+    // Use state for userId so we can trigger updates
+    const [userId, setUserId] = useState(localStorage.getItem('user_id'));
 
     const fetchHistory = useCallback(async () => {
-        if (!userId) {
+        const currentUserId = localStorage.getItem('user_id');
+        setUserId(currentUserId); // Sync state
+
+        if (!currentUserId) {
             setHistory([]);
             return;
         }
 
-        // Don't set loading true here to avoid flickering if we just want a background refresh
-        // But for initial load it might be needed. We'll handle loading state in components mostly,
-        // or add an initialLoading state.
         try {
-            const { data } = await api.getChats(userId);
+            const { data } = await api.getChats(currentUserId);
             setHistory(data);
         } catch (error) {
             console.error('Failed to fetch chat history', error);
         }
-    }, [userId]);
+    }, []);
 
-    // Initial fetch
+    // Initial fetch and listen for auth changes
     useEffect(() => {
         fetchHistory();
+
+        const handleAuthChange = () => {
+            // Force re-read from local storage if needed, or just re-fetch
+            // verification: we need to re-read userId from localStorage inside fetchHistory 
+            // but fetchHistory memoizes on 'userId' which is a const from render scope.
+            // We need to move userId to state or ref, or just force update.
+            // Actually, simplest is to just window.location.reload() on logout, 
+            // but on login we want SPA feel.
+            // Let's reload the history.
+            fetchHistory();
+        };
+
+        window.addEventListener('auth-change', handleAuthChange);
+        return () => window.removeEventListener('auth-change', handleAuthChange);
     }, [fetchHistory]);
 
     // Exposed value

@@ -51,7 +51,7 @@ const Dashboard = () => {
 
     const handleLogout = () => {
         localStorage.removeItem('user_id');
-        navigate('/login');
+        navigate('/');
     }
 
     const handleResumeChat = async (sessionId, repoUrl) => {

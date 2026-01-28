@@ -7,3 +7,7 @@ tiktoken
 chromadb
 langchain
 motor
+python-jose[cryptography]
+passlib[bcrypt]
+google-generativeai
+python-multipart
