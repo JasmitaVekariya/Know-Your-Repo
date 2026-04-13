@@ -62,7 +62,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
-        "https://know-your-repo-frontend.vercel.app"
+        "https://know-your-repo-duhacks5.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
